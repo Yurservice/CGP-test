@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Title of the test task</title>
+    <link href="/favicon.png" rel="shortcut icon" type="image/x-icon">
+    <meta charset="UTF-8">
+</head>
+<body>
+    <h1>USER TABLE</h1>
+    <main id='main'>
+        <div id="table">
+            <div class="title_row">
+                <div class="col" style='width:10%'>ID</div><div class="col" style='width:40%'>Name</div><div class="col" style='width:40%'>City</div><div class="col" style='width:10%'>Image Count</div>
+            </div>
+            <div id="user_conteiner">
+            
+            </div>
+            <button id="get_more_users" style="margin-top: 10px;">ПОЛУЧИТЬ БОЛЬШЕ ПОЛЬЗОВАТЕЛЕЙ</button>
+        </div>
+        <form  name="user_form" action='/save_input_value' method="post">
+            <div label for="name">Ваше имя:</div>
+            <input type="text" name="name" required maxlength="45">
+            <div label for="city">Ваш город:</div>
+            <input type="text" name="city" required maxlength="45">
+            <div label for="image">Добавтие фото:</div>
+            <div id="questform_photo">
+                <label>
+                    <input name="image" type="file" />
+                </label>
+            </div>
+            <input type="submit" id='button' name="user_form" value="ДОБАВИТЬ ПОЛЬЗОВАТЕЛЯ"/>
+        </form>
+    </main>
+    <footer id="footer_conteiner">
+		<div id="footer">
+			<p style="text-align:center">Copyright © 2023 Miestiechkin Oleg. Open sourse code is <a style="color:#fc6d26" href="https://github.com/Yurservice/SimpleMVC">here</a></p>
+		</div>
+	</footer>
+</body>
+</html>
+
+<script>
+    let offset = 0;
+
+    getUsers(offset);
+
+    // Events
+
+    document.getElementById('get_more_users').addEventListener("click", function(event) {
+        offset += 10; 
+        getUsers(offset);
+    });
+
+    document.querySelector("form").addEventListener("submit", function(event) {
+        event.preventDefault(); 
+        let name = event.target.elements['name'].value;
+        let city = event.target.elements['city'].value;
+        let image = event.target.elements['image'].files[0];
+        
+        const data = {
+            image: image, 
+            name: name,
+            city: city
+        };
+        
+        if(name.length > 2&&city.length > 2) {
+            event.target.elements['name'].value = '';
+            event.target.elements['city'].value = '';
+            sendRequest('POST', "/api/save_user", data).then(data => {
+                if(data !== false) {
+                    var user_conteiner = document.getElementById("user_conteiner");
+                    var newElement = document.createElement("div");
+                    newElement.className = "row";
+                    newElement.innerHTML = "<div class='col' style='width:10%'>" + data.id + "</div><div class='col' style='width:40%'>" + data.name + "</div><div class='col' style='width:40%'>" + data.city + "</div><div class='col' style='width:10%'>1</div>";
+                    user_conteiner.appendChild(newElement);
+                }
+            });   
+        }
+    }); 
+
+    // Functions
+
+    function getUsers(offset) {
+        let Url = '/api/users?limit=10&offset=' + offset + '';
+        sendRequest('GET', Url).then(data => {
+            if(data !== false) {
+                data.forEach(function(element) {
+                    var user_conteiner = document.getElementById("user_conteiner");
+                    var newElement = document.createElement("div");
+                    newElement.className = "row";
+                    newElement.innerHTML = "<div class='col' style='width:10%'>" + element.id + "</div><div class='col' style='width:40%'>" + element.name + "</div><div class='col' style='width:40%'>" + element.city + "</div><div class='col' style='width:10%'>" + element.user_images_count + "</div>";
+                    user_conteiner.appendChild(newElement);
+                });
+            }
+        });   
+    }
+
+    async function sendRequest(method, url, data = null) {
+        const headers = {
+            'SameSite': 'Strict'
+        }
+
+        if (data === null) headers['Content-Type'] = 'application/json';
+
+        const requestOptions = {
+            method: method,
+            headers: headers
+        };
+
+        if (data !== null) {
+            const formData = new FormData();
+            formData.append('image', data.image);
+            formData.append('name', data.name);
+            formData.append('city', data.city);
+
+            requestOptions.body =  formData;
+        }
+        const response = await fetch(url, requestOptions)
+        if(response.ok) {
+            var data = await response.json();
+            return data;
+        }
+        if (response.status === 422) {
+            return response.json().then(data => {
+                alert('Вы допустили ошибку при вводе данных: ' + data.errors);
+                return false;
+            });
+        }
+        else {
+            console.log(await response.json());
+            return false;
+        }
+    }
+    
+</script>
+
+<style>
+    html{
+        height: 100%;
+    }
+
+    body {
+        font-family:Montserrat-Medium;
+        width: 100%;
+        margin: 0 auto;
+        display: flex;
+        flex-direction:column;
+        min-width:370px;
+            min-height:100vh;
+            height: auto;
+        color:#514f4f;
+            overflow-x:hidden;
+            position:relative;
+    }
+    
+    h1, h2 {
+        color: #514f4f;
+        font-size: 36px;
+        text-align:center;
+	}
+
+    main {
+        flex: 1 1 auto;
+        padding-bottom:50px;
+    }
+
+    #main {
+        background-color: white;
+        box-shadow: 0 -1px 4px 0px black;
+        -webkit-box-shadow: 0 0 4px 0px black; 
+        -moz-box-shadow: 0 0 4px 0px black; 
+        padding-top: 10px;
+        height: 70vh;
+        overflow: auto;
+        margin: 0 auto 10px;
+        width:100%;
+        flex: 1 1 auto;
+        position:relative;
+        z-index:0;
+    }
+
+    form {
+        width:250px;;
+        margin: 50px auto;
+        display: flex;
+        flex-direction: column;
+    }
+
+    #button {
+        cursor:pointer;
+        margin-top:15px;
+    }
+
+    p {
+        text-align:center;
+	}
+
+    #saved_data {
+        margin-top:50px;
+        min-height:50px;
+    }
+
+    #footer_conteiner {
+        width: 100%;
+        min-height: 55px;
+        overflow: hidden;
+    }
+
+    #footer {
+        box-shadow: 0 -1px 4px 0 #2e3232;
+        margin: 1px auto;
+        width: 100%;
+        height: 100%;
+        padding: 5px 0;
+        font-weight: bold;
+        font-size: 13px;
+        align-items: center;
+    }
+
+    #table {
+        display: flex; 
+        width: 600px; 
+        flex-direction: column;
+        margin: 10px auto;
+    }
+
+    #table .row, #table .title_row {
+        display: flex; width: 100%; flex-direction: row; justify-content: space-between;
+    }
+
+</style>
